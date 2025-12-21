@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>SnapFocus.App</AssemblyName>
+    <ApplicationIcon>Resources\snapfocus-placeholder.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SnapFocus.Core\SnapFocus.Core.csproj" />
+    <ProjectReference Include="..\SnapFocus.Input\SnapFocus.Input.csproj" />
+    <ProjectReference Include="..\SnapFocus.Observer\SnapFocus.Observer.csproj" />
+    <ProjectReference Include="..\SnapFocus.Layouts\SnapFocus.Layouts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Resources\snapfocus-placeholder.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

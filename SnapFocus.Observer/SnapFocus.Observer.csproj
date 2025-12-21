@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>SnapFocus.Observer</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SnapFocus.Core\SnapFocus.Core.csproj" />
+  </ItemGroup>
+</Project>
