@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Threading;
 using SnapFocus.Core;
 using SnapFocus.Core.Logging;
 using SnapFocus.Core.Interfaces;
@@ -14,6 +15,7 @@ namespace SnapFocus.App;
 public partial class App : System.Windows.Application
 {
     private FileLogger? _logger;
+    private SingleInstance? _singleInstance;
     private TrayService? _tray;
     private IWindowObserver? _observer;
     private IHotkeyService? _hotkeys;
@@ -22,6 +24,16 @@ public partial class App : System.Windows.Application
     protected override void OnStartup(StartupEventArgs e)
     {
         BootLog.Write("=== BOOT INIT ===");
+        BootLog.Write($"=== BOOT Instance PID={Environment.ProcessId} ===");
+
+        _singleInstance = new SingleInstance(@"Global\whami.SnapFocus.SingleInstance");
+        if (!_singleInstance.IsPrimary)
+        {
+            BootLog.Write($"=== BOOT EXIT \"secondary instance blocked\" PID={Environment.ProcessId} ===");
+            Shutdown();
+            return;
+        }
+
 
         base.OnStartup(e);
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -66,6 +78,7 @@ public partial class App : System.Windows.Application
             _hotkeys?.Stop();
             _observer?.Stop();
             _tray?.Dispose();
+            _singleInstance?.Dispose();
             _logger?.Info("Shutdown complete");
         }
         catch { /* ignore */ }

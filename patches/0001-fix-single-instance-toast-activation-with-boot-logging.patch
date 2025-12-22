@@ -1,0 +1,99 @@
+From 91f3a1c2b7e84d3c9a0b1d2e3f4a5b6c7d8e9f0a Mon Sep 17 00:00:00 2001
+From: SnapFocus Bot <noreply@snapfocus.local>
+Date: Mon, 22 Dec 2025 21:40:00 +0100
+Subject: [PATCH] Fix: prevent multiple tray instances on notification click
+ with explicit boot logging
+
+Ensure single-instance behavior using a global mutex. Always log BOOT INIT
+for every process start, and explicitly log BOOT EXIT when a secondary
+instance is blocked and shut down immediately.
+
+---
+ SnapFocus.App/App.xaml.cs       | 17 +++++++++++++++++
+ SnapFocus.App/SingleInstance.cs | 42 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 59 insertions(+)
+ create mode 100644 SnapFocus.App/SingleInstance.cs
+
+diff --git a/SnapFocus.App/App.xaml.cs b/SnapFocus.App/App.xaml.cs
+index 8b8b8b8..d4d4d4d 100644
+--- a/SnapFocus.App/App.xaml.cs
++++ b/SnapFocus.App/App.xaml.cs
+@@ -13,6 +13,7 @@ namespace SnapFocus.App;
+ public partial class App : System.Windows.Application
+ {
+     private FileLogger? _logger;
++    private SingleInstance? _singleInstance;
+     private TrayService? _tray;
+     private IWindowObserver? _observer;
+     private IHotkeyService? _hotkeys;
+@@
+     protected override void OnStartup(StartupEventArgs e)
+     {
+         BootLog.Write("=== BOOT INIT ===");
++
++        _singleInstance = new SingleInstance(@"Global\whami.SnapFocus.SingleInstance");
++        if (!_singleInstance.IsPrimary)
++        {
++            BootLog.Write(
++                $"=== BOOT EXIT \"secondary instance blocked\" PID={Environment.ProcessId} ==="
++            );
++
++            Shutdown();
++            return;
++        }
+ 
+         base.OnStartup(e);
+         ShutdownMode = ShutdownMode.OnExplicitShutdown;
+@@
+             _hotkeys?.Stop();
+             _observer?.Stop();
+             _tray?.Dispose();
++            _singleInstance?.Dispose();
+             _logger?.Info("Shutdown complete");
+         }
+         catch { /* ignore */ }
+diff --git a/SnapFocus.App/SingleInstance.cs b/SnapFocus.App/SingleInstance.cs
+new file mode 100644
+index 0000000..a1b2c3d
+--- /dev/null
++++ b/SnapFocus.App/SingleInstance.cs
+@@ -0,0 +1,42 @@
++using System;
++using System.Threading;
++
++namespace SnapFocus.App;
++
++internal sealed class SingleInstance : IDisposable
++{
++    private readonly Mutex _mutex;
++    public bool IsPrimary { get; }
++
++    public SingleInstance(string mutexName)
++    {
++        if (string.IsNullOrWhiteSpace(mutexName))
++            throw new ArgumentException("Mutex name must not be empty.", nameof(mutexName));
++
++        bool createdNew;
++        _mutex = new Mutex(initiallyOwned: true, name: mutexName, createdNew: out createdNew);
++        IsPrimary = createdNew;
++    }
++
++    public void Dispose()
++    {
++        try
++        {
++            if (IsPrimary)
++                _mutex.ReleaseMutex();
++        }
++        catch
++        {
++            // ignore
++        }
++        finally
++        {
++            _mutex.Dispose();
++        }
++    }
++}
+-- 
+2.43.0

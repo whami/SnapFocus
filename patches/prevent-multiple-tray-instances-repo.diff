@@ -1,0 +1,84 @@
+diff --git a/SnapFocus.App/App.xaml.cs b/SnapFocus.App/App.xaml.cs
+--- a/SnapFocus.App/App.xaml.cs
++++ b/SnapFocus.App/App.xaml.cs
+@@ -1,4 +1,5 @@
+ using System.Windows;
++using System.Threading;
+ using SnapFocus.Core;
+ using SnapFocus.Core.Logging;
+ using SnapFocus.Core.Interfaces;
+@@ -14,6 +15,7 @@
+ public partial class App : System.Windows.Application
+ {
+     private FileLogger? _logger;
++    private SingleInstance? _singleInstance;
+     private TrayService? _tray;
+     private IWindowObserver? _observer;
+     private IHotkeyService? _hotkeys;
+@@ -22,6 +24,15 @@
+     protected override void OnStartup(StartupEventArgs e)
+     {
+         BootLog.Write("=== BOOT INIT ===");
++
++        _singleInstance = new SingleInstance(@"Global\whami.SnapFocus.SingleInstance");
++        if (!_singleInstance.IsPrimary)
++        {
++            BootLog.Write($"=== BOOT EXIT \"secondary instance blocked\" PID={Environment.ProcessId} ===");
++            Shutdown();
++            return;
++        }
++
+ 
+         base.OnStartup(e);
+         ShutdownMode = ShutdownMode.OnExplicitShutdown;
+@@ -66,6 +77,7 @@
+             _hotkeys?.Stop();
+             _observer?.Stop();
+             _tray?.Dispose();
++            _singleInstance?.Dispose();
+             _logger?.Info("Shutdown complete");
+         }
+         catch { /* ignore */ }
+
+diff --git a/SnapFocus.App/SingleInstance.cs b/SnapFocus.App/SingleInstance.cs
+new file mode 100644
+--- /dev/null
++++ b/SnapFocus.App/SingleInstance.cs
+@@ -0,0 +1,37 @@
++using System;
++using System.Threading;
++
++namespace SnapFocus.App;
++
++internal sealed class SingleInstance : IDisposable
++{
++    private readonly Mutex _mutex;
++    public bool IsPrimary { get; }
++
++    public SingleInstance(string mutexName)
++    {
++        if (string.IsNullOrWhiteSpace(mutexName))
++            throw new ArgumentException("Mutex name must not be empty.", nameof(mutexName));
++
++        bool createdNew;
++        _mutex = new Mutex(initiallyOwned: true, name: mutexName, createdNew: out createdNew);
++        IsPrimary = createdNew;
++    }
++
++    public void Dispose()
++    {
++        try
++        {
++            if (IsPrimary)
++                _mutex.ReleaseMutex();
++        }
++        catch
++        {
++            // ignore
++        }
++        finally
++        {
++            _mutex.Dispose();
++        }
++    }
++}
