@@ -1,0 +1,153 @@
+--- a/SnapFocus.App/App.xaml.cs
+
++++ b/SnapFocus.App/App.xaml.cs
+
+@@ -1,4 +1,5 @@
+
+ using System.Windows;
+
++using System.Threading;
+
+ using SnapFocus.Core;
+
+ using SnapFocus.Core.Logging;
+
+ using SnapFocus.Core.Interfaces;
+
+@@ -14,6 +15,7 @@
+
+ public partial class App : System.Windows.Application
+
+ {
+
+     private FileLogger? _logger;
+
++    private SingleInstance? _singleInstance;
+
+     private TrayService? _tray;
+
+     private IWindowObserver? _observer;
+
+     private IHotkeyService? _hotkeys;
+
+@@ -22,6 +24,14 @@
+
+     protected override void OnStartup(StartupEventArgs e)
+
+     {
+
+         BootLog.Write("=== BOOT INIT ===");
+
++
+
++        _singleInstance = new SingleInstance(@"Global\whami.SnapFocus.SingleInstance");
+
++        if (!_singleInstance.IsPrimary)
+
++        {
+
++            BootLog.Write($"=== BOOT EXIT \"secondary instance blocked\" PID={Environment.ProcessId} ===");
+
++            Shutdown();
+
++            return;
+
++        }
+
+ 
+
+         base.OnStartup(e);
+
+         ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
+@@ -66,6 +76,7 @@
+
+             _hotkeys?.Stop();
+
+             _observer?.Stop();
+
+             _tray?.Dispose();
+
++            _singleInstance?.Dispose();
+
+             _logger?.Info("Shutdown complete");
+
+         }
+
+         catch { /* ignore */ }
+
+
+--- a/SnapFocus.App/SingleInstance.cs
+
++++ b/SnapFocus.App/SingleInstance.cs
+
+@@ -0,0 +1,34 @@
+
++using System;
+
++using System.Threading;
+
++
+
++namespace SnapFocus.App;
+
++
+
++internal sealed class SingleInstance : IDisposable
+
++{
+
++    private readonly Mutex _mutex;
+
++    public bool IsPrimary { get; }
+
++
+
++    public SingleInstance(string mutexName)
+
++    {
+
++        bool createdNew;
+
++        _mutex = new Mutex(true, mutexName, out createdNew);
+
++        IsPrimary = createdNew;
+
++    }
+
++
+
++    public void Dispose()
+
++    {
+
++        try
+
++        {
+
++            if (IsPrimary)
+
++                _mutex.ReleaseMutex();
+
++        }
+
++        catch
+
++        {
+
++            // ignore
+
++        }
+
++        finally
+
++        {
+
++            _mutex.Dispose();
+
++        }
+
++    }
+
++}
+
