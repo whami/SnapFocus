@@ -67,7 +67,7 @@ public sealed class TrayService : IDisposable
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = "notepad.exe",
-                    Arguments = $"\"{logger.LogFilePath}\"",
+                    Arguments = $"\"{logger.SessionLogFile}\"",
                     UseShellExecute = true
                 });
             }
@@ -82,7 +82,7 @@ public sealed class TrayService : IDisposable
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = "explorer.exe",
-                    Arguments = $"\"{logger.LogFolderPath}\"",
+                    Arguments = $"\"{logger.LogDirectory}\"",
                     UseShellExecute = true
                 });
             }

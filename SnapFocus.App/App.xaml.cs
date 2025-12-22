@@ -35,7 +35,7 @@ public partial class App : System.Windows.Application
             _logger.Info($"CurrentDir={Environment.CurrentDirectory}");
             _logger.Info($"Temp={Path.GetTempPath()}");
             _logger.Info($"LocalAppData={Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}");
-            _logger.Info($"LogFile={_logger.LogFilePath}");
+            _logger.Info($"LogFile={_logger.SessionLogFile}");
 
             // Initialize modules (no-op but fully wired & logged)
             _observer = new WindowObserver(_logger);
