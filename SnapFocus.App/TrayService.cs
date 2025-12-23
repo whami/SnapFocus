@@ -45,6 +45,18 @@ public sealed class TrayService : IDisposable
         }
         catch { /* ignore */ }
 
+        // IMPORTANT: In MSIX/Desktop-Bridge scenarios, clicking a balloon can trigger an activation path.
+        // We explicitly swallow balloon clicks to avoid any re-bootstrap / duplicate tray initialization.
+        _icon.BalloonTipClicked += (_, __) =>
+        {
+            _logger.Info("Tray: BalloonTipClicked (ignored)");
+        };
+
+        _icon.BalloonTipClosed += (_, __) =>
+        {
+            _logger.Info("Tray: BalloonTipClosed");
+        };
+
         _icon.MouseUp += (_, e) =>
         {
             if (e.Button == MouseButtons.Left)
