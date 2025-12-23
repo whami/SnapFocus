@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 using System.Windows.Forms;
 using System.IO;
 using SnapFocus.Core.Logging;
@@ -19,6 +20,7 @@ public sealed class TrayService : IDisposable
     private ILogger _logger;
     private readonly NotifyIcon _icon;
     private readonly ContextMenuStrip _menu;
+    private static readonly MethodInfo? _showContextMenuMethod = typeof(NotifyIcon).GetMethod("ShowContextMenu", BindingFlags.Instance | BindingFlags.NonPublic);
 
     public TrayService(FileLogger logger)
     {
@@ -47,8 +49,9 @@ public sealed class TrayService : IDisposable
         {
             if (e.Button == MouseButtons.Left)
             {
-                // Show context menu on left click (mongo wow)
-                _menu.Show(Cursor.Position);
+                // Show the *native* context menu behavior also on left-click (Mongo UX).
+                // This avoids sticky menus and inconsistent placement compared to right-click.
+                _showContextMenuMethod?.Invoke(_icon, null);
             }
         };
 
