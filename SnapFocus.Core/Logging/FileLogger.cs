@@ -1,4 +1,3 @@
-﻿using System.Text;
 using SnapFocus.Core.Paths;
 
 namespace SnapFocus.Core.Logging;
