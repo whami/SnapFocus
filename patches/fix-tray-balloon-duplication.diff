@@ -1,0 +1,44 @@
+--- a/SnapFocus.App/TrayService.cs
++++ b/SnapFocus.App/TrayService.cs
+@@ -3,6 +3,7 @@
+ using System.IO;
+ using SnapFocus.Core.Logging;
+ using Forms = System.Windows.Forms;
++using System.Threading;
+ 
+ namespace SnapFocus.App;
+ 
+@@ -16,12 +17,21 @@
+ /// </summary>
+ public sealed class TrayService : IDisposable
+ {
++    private static int _created; // process-wide guard against multiple tray instances
+     private ILogger _logger;
+     private readonly NotifyIcon _icon;
+     private readonly ContextMenuStrip _menu;
+ 
+     public TrayService(FileLogger logger)
+     {
++        // Guard: NotifyIcon is not a singleton. Prevent accidental double-initialization inside the same process
++        // (e.g., when a balloon/notification click triggers code paths that re-run tray bootstrap).
++        if (Interlocked.Exchange(ref _created, 1) == 1)
++        {
++            _logger.Info("TrayService: secondary initialization blocked");
++            throw new InvalidOperationException("TrayService already created");
++        }
++
+         _logger = logger;
+ 
+         _menu = BuildMenu(logger);
+@@ -33,6 +43,11 @@
+             Text = "SnapFocus",
+             ContextMenuStrip = _menu
+         };
++
++        // IMPORTANT: Clicking the startup balloon must not trigger app activation / re-bootstrap.
++        // Keep it informational only.
++        _icon.BalloonTipClicked += (_, __) => _logger.Info("Tray: BalloonTipClicked (ignored)");
++        _icon.BalloonTipClosed += (_, __) => _logger.Info("Tray: BalloonTipClosed");
+ 
+         // Best-effort set to our placeholder icon (works unpackaged; in MSIX may fall back)
+         try
