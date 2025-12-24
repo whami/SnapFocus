@@ -1,17 +1,16 @@
 ﻿diff --git a/SnapFocus.Core/Logging/FileLogger.cs b/SnapFocus.Core/Logging/FileLogger.cs
 --- a/SnapFocus.Core/Logging/FileLogger.cs
 +++ b/SnapFocus.Core/Logging/FileLogger.cs
-@@ -1,6 +1,7 @@
- using System.Text;
- using SnapFocus.Core.Paths;
- 
- namespace SnapFocus.Core.Logging;
- 
+@@ -10,6 +10,7 @@
  public sealed class FileLogger : ILogger
  {
      private readonly object _gate = new();
 +    private static readonly int Pid = Environment.ProcessId;
-@@ -1,6 +1,6 @@
+ 
+     public string LogDirectory { get; }
+     public string SessionLogFile { get; }
+@@ -41,7 +42,7 @@
+ 
      private void WriteInternal(string level, string message)
      {
 -        var line = $"[{DateTime.Now:O}] {level} {message}{Environment.NewLine}";
