@@ -1,0 +1,22 @@
+﻿diff --git a/SnapFocus.Core/Logging/FileLogger.cs b/SnapFocus.Core/Logging/FileLogger.cs
+index 3b2a9e4..9d8e7c1 100644
+--- a/SnapFocus.Core/Logging/FileLogger.cs
++++ b/SnapFocus.Core/Logging/FileLogger.cs
+@@ -1,6 +1,7 @@
+ public sealed class FileLogger : ILogger
+ {
+     private readonly object _gate = new();
++    private static readonly int Pid = Environment.ProcessId;
+
+     public string LogDirectory { get; }
+     public string SessionLogFile { get; }
+@@ -40,7 +41,8 @@
+     private void WriteInternal(string level, string message)
+     {
+-        var line = $"[{DateTime.Now:O}] {level} {message}{Environment.NewLine}";
++        var line =
++            $"[{DateTime.Now:O}] [PID {Pid}] {level} {message}{Environment.NewLine}";
+         File.AppendAllText(SessionLogFile, line);
+         File.AppendAllText(LatestLogFile, line);
+     }
+ }
